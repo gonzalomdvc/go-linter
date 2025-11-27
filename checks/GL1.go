@@ -1,4 +1,4 @@
-// Go Linter 1: no unused vars / consts
+// Go Linter 1: no unused local vars
 
 package checks
 
@@ -10,7 +10,7 @@ import (
 	"github.com/gonzalomdvc/go-linter/interfaces"
 )
 
-func GL1(file *ast.File) []interfaces.Finding {
+func GL1(fset *token.FileSet, file *ast.File) []interfaces.Finding {
 	var findings []interfaces.Finding
 	ast.Inspect(file, func(n ast.Node) bool {
 				switch x := n.(type) {
@@ -32,7 +32,7 @@ func GL1(file *ast.File) []interfaces.Finding {
 										})
 										if !used {
 											findings = append(findings, interfaces.Finding{
-												Position: token.Position{Offset: int(n.Pos()), Filename: file.Name.Name}, // Simplified for example
+												Position: fset.Position(n.Pos()), // Simplified for example
 												Check: interfaces.Check{
 													Name: "GL1",
 													Func: GL1,

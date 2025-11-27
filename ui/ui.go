@@ -1,19 +1,27 @@
 package ui
 
 import (
+	"fmt"
 	"go/token"
 	"os"
+	"strings"
 )
 
-func PrintPosition(pos token.Position, bufferSize int, directory string) (string, error) {
-	file, err := os.Open(directory + "/" + pos.Filename)
+const BUFFER_SIZE = 100
+
+func PrintPosition(pos token.Position, message string) (string, error) {
+	file, err := os.Open(pos.Filename)
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 
-	buffer := make([]byte, bufferSize)
+	buffer := make([]byte, BUFFER_SIZE)
 	file.ReadAt(buffer, int64(pos.Offset))
 
-	return string(buffer), nil
+	output := fmt.Sprintf("Warning in file: %s, Line: %d, Column: %d\n", pos.Filename, pos.Line, pos.Column)
+	output += fmt.Sprintf("%s\n", message)
+	output += fmt.Sprintf("--> %s", strings.Split(string(buffer), "\n")[0])
+
+	return output, nil
 }

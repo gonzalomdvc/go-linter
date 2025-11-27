@@ -7,7 +7,7 @@ import (
 
 type Check struct {
 	Name string
-	Func func(*ast.File) ([]Finding)
+	Func func(*token.FileSet, *ast.File) ([]Finding)
 	Message string
 } 
 
