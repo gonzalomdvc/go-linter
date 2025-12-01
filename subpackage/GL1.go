@@ -1,6 +1,6 @@
 package subpackage
 
-func main() {
+func GL1() {
 	var unusedLocalVar string
 }
 
