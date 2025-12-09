@@ -17,7 +17,7 @@ func GL2(fset *token.FileSet, file *ast.File) []interfaces.Finding {
 		case *ast.IfStmt:
 			if len(x.Body.List) == 0 {
 				findings = append(findings, interfaces.Finding{
-					Position: fset.Position(n.Pos()), // Simplified for example
+					Position: fset.Position(n.Pos()),
 					Check: interfaces.Check{
 						Name:    "GL2",
 						Func:    GL2,
@@ -30,7 +30,7 @@ func GL2(fset *token.FileSet, file *ast.File) []interfaces.Finding {
 				if elseBlock, ok := x.Else.(*ast.BlockStmt); ok {
 					if len(elseBlock.List) == 0 {
 						findings = append(findings, interfaces.Finding{
-							Position: fset.Position(x.Else.Pos()), // Simplified for example
+							Position: fset.Position(x.Else.Pos()),
 							Check: interfaces.Check{
 								Name:    "GL2",
 								Func:    GL2,

@@ -1,4 +1,4 @@
-package subpackage
+package test
 
 func GL1() {
 	var unusedLocalVar string

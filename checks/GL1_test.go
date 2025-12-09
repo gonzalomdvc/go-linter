@@ -9,11 +9,11 @@ import (
 )
 
 func Test_GL1(t *testing.T) {
-	astFile, fset, err := ast.GetAst("../subpackage/GL1.go")
+	astFile, fset, err := ast.GetAst("../test/GL1.go")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-	
+
 	findings := GL1(fset, astFile)
 	if len(findings) != 2 {
 		t.Errorf("Expected 2 findings, got %d", len(findings))

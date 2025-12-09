@@ -9,7 +9,7 @@ import (
 )
 
 func Test_GL2(t *testing.T) {
-	astFile, fset, err := ast.GetAst("../subpackage/GL2.go")
+	astFile, fset, err := ast.GetAst("../test/GL2.go")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
