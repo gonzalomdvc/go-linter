@@ -35,7 +35,6 @@ func PrintFindings(findings []interfaces.Finding) error {
 			return fmt.Errorf("Error printing position: %v", err)
 		} else {
 			fmt.Printf("%s\n", pos)
-			return nil
 		}
 	}
 	return nil
