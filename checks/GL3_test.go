@@ -1,30 +1,19 @@
 package checks
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/gonzalomdvc/go-linter/ast"
-	"github.com/gonzalomdvc/go-linter/ui"
+	"github.com/gonzalomdvc/go-linter/test"
 )
 
 func Test_GL3(t *testing.T) {
-	astFile, fset, err := ast.GetAst("../test/GL3.go")
+	findings, err := test.RunCheckTest("GL3.go", true, GL3)
+
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
-	findings := GL3(fset, astFile)
 	if len(findings) != 1 {
 		t.Errorf("Expected 1 finding, got %d", len(findings))
-	}
-
-	for _, finding := range findings {
-		pos, err := ui.PrintPosition(finding.Position, finding.Check.Message)
-		if err != nil {
-			t.Errorf("Error printing position: %v", err)
-		} else {
-			fmt.Printf("%s\n", pos)
-		}
 	}
 }

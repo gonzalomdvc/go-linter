@@ -5,6 +5,8 @@ import (
 	"go/token"
 	"os"
 	"strings"
+
+	"github.com/gonzalomdvc/go-linter/interfaces"
 )
 
 const BUFFER_SIZE = 100
@@ -24,4 +26,17 @@ func PrintPosition(pos token.Position, message string) (string, error) {
 	output += fmt.Sprintf("--> %s", strings.Split(string(buffer), "\n")[0])
 
 	return output, nil
+}
+
+func PrintFindings(findings []interfaces.Finding) error {
+	for _, finding := range findings {
+		pos, err := PrintPosition(finding.Position, finding.Check.Message)
+		if err != nil {
+			return fmt.Errorf("Error printing position: %v", err)
+		} else {
+			fmt.Printf("%s\n", pos)
+			return nil
+		}
+	}
+	return nil
 }
