@@ -22,7 +22,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	path := dir + string(os.PathSeparator) + "test"
-	findings := RunLinterChecks(path, Checks)
-	ui.PrintFindings(findings)
+	findings := RunLinterChecks(dir, Checks, 0)
+	if len(findings) > 0 {
+		ui.PrintFindings(findings)
+		os.Exit(1)
+	} else {
+		ui.PrintSuccessfulMessage()
+		os.Exit(0)
+	}
 }

@@ -39,3 +39,7 @@ func PrintFindings(findings []interfaces.Finding) error {
 	}
 	return nil
 }
+
+func PrintSuccessfulMessage() {
+	fmt.Println("Go-linter ran successfully! No issues found.")
+}

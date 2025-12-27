@@ -11,15 +11,29 @@ import (
 	"github.com/gonzalomdvc/go-linter/interfaces"
 )
 
-func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding) []interfaces.Finding {
+var MaxDepth = 3
+
+func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding, depth int) []interfaces.Finding {
 	files, err := os.ReadDir(dirname)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading source code files: %s", err))
 	}
-
+	var findings []interfaces.Finding
 	var srcFiles []string
 	for _, file := range files {
 		if file.IsDir() {
+			if depth >= MaxDepth {
+				fmt.Printf("Max depth of %d nested directories reached. Skipping directory: %s\n", MaxDepth, file.Name())
+				continue
+			}
+			if file.Name()[0] == '.' {
+				continue
+			}
+			subDirPath := dirname + string(os.PathSeparator) + file.Name()
+			subDirFindings := RunLinterChecks(subDirPath, checks, depth+1)
+			if len(subDirFindings) > 0 {
+				findings = append(findings, subDirFindings...)
+			}
 			continue
 		}
 		isSourceFile, err := regexp.MatchString(`\.go$`, file.Name())
@@ -52,7 +66,6 @@ func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) 
 		}
 	}
 
-	var findings []interfaces.Finding
 	for i := 0; i < totalJobs; i++ {
 		res := <-resultsCh
 		findings = append(findings, res...)
