@@ -6,12 +6,17 @@ import (
 )
 
 type Check struct {
-	Name string
-	Func func(*token.FileSet, *ast.File) ([]Finding)
+	Name    string
+	Func    func(*token.FileSet, *ast.File) []Finding
 	Message string
-} 
+}
 
 type Finding struct {
 	Position token.Position
-	Check Check
+	Check    Check
+}
+
+type Position struct {
+	Column int
+	Line   int
 }

@@ -3,18 +3,26 @@ package checks
 import (
 	"testing"
 
+	"github.com/gonzalomdvc/go-linter/interfaces"
 	"github.com/gonzalomdvc/go-linter/test"
 )
 
 func Test_GL2(t *testing.T) {
-	findings, err := test.RunCheckTest("GL2.go", true, GL2)
+	positions := []interfaces.Position{
+		{
+			Column: 2,
+			Line:   4,
+		},
+		{
+			Column: 9,
+			Line:   6,
+		},
+	}
+
+	err := test.RunCheckTest("GL2.go", true, positions, GL2)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	if len(findings) != 2 {
-		t.Errorf("Expected 2 findings, got %d", len(findings))
 	}
 
 }
