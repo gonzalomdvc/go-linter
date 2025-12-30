@@ -15,6 +15,7 @@ var Checks = []func(*token.FileSet, *ast.File) []interfaces.Finding{
 	checks.GL2,
 	checks.GL3,
 	checks.GL4,
+	checks.GL6,
 }
 
 func main() {
