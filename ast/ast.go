@@ -19,3 +19,7 @@ func GetAst(fileName string) (*ast.File, *token.FileSet, error) {
 	}
 	return astFile, fset, nil
 }
+
+func PrintAst(fset *token.FileSet, astFile *ast.File) {
+	ast.Print(fset, astFile)
+}
