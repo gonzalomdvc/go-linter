@@ -13,7 +13,7 @@ import (
 
 var MaxDepth = 3
 
-func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding, depth int) []interfaces.Finding {
+func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding, depth int, currentDepth int) []interfaces.Finding {
 	files, err := os.ReadDir(dirname)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading source code files: %s", err))
@@ -22,18 +22,22 @@ func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) 
 	var srcFiles []string
 	for _, file := range files {
 		if file.IsDir() {
-			if depth >= MaxDepth {
+			if currentDepth > MaxDepth {
 				fmt.Printf("Max depth of %d nested directories reached. Skipping directory: %s\n", MaxDepth, file.Name())
+				continue
+			}
+			if currentDepth > depth {
 				continue
 			}
 			if file.Name()[0] == '.' {
 				continue
 			}
 			subDirPath := dirname + string(os.PathSeparator) + file.Name()
-			subDirFindings := RunLinterChecks(subDirPath, checks, depth+1)
+			subDirFindings := RunLinterChecks(subDirPath, checks, depth, currentDepth+1)
 			if len(subDirFindings) > 0 {
 				findings = append(findings, subDirFindings...)
 			}
+
 			continue
 		}
 		isSourceFile, err := regexp.MatchString(`\.go$`, file.Name())

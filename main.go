@@ -23,7 +23,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	findings := RunLinterChecks(dir, Checks, 0)
+	findings := RunLinterChecks(dir, Checks, 3, 0)
 	if len(findings) > 0 {
 		ui.PrintFindings(findings)
 		os.Exit(1)
