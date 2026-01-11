@@ -23,6 +23,8 @@ func GL6(fset *token.FileSet, file *ast.File) []interfaces.Finding {
 			if _, alreadyChecked := checkedIfs[ifs.Pos()]; alreadyChecked {
 				return false
 			}
+			minCases := 3
+			caseCount := 1
 			for {
 				if bin, ok := ifs.Cond.(*ast.BinaryExpr); ok {
 					if xvar, ok := bin.X.(*ast.Ident); ok {
@@ -39,11 +41,16 @@ func GL6(fset *token.FileSet, file *ast.File) []interfaces.Finding {
 				if !ok {
 					break
 				}
+				_, ok = elseIf.Cond.(*ast.BinaryExpr)
+				if !ok {
+					break
+				}
 				checkedIfs[ifs.Pos()] = true
+				caseCount++
 				ifs = elseIf
 			}
 
-			if variable != nil {
+			if variable != nil && caseCount >= minCases {
 				findings = append(findings, interfaces.Finding{
 					Position: fset.Position(n.Pos()),
 					Check: interfaces.Check{
