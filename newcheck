@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cp ./checks/template.go ./checks/$1.go
+cp ./checks/template_test.go ./checks/$1_test.go
+echo "package test" > ./test/$1.go
+
