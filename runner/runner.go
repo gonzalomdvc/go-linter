@@ -1,4 +1,4 @@
-package main
+package runner
 
 import (
 	"fmt"
@@ -8,10 +8,21 @@ import (
 	"regexp"
 
 	"github.com/gonzalomdvc/go-linter/ast"
+	"github.com/gonzalomdvc/go-linter/checks"
 	"github.com/gonzalomdvc/go-linter/interfaces"
 )
 
 var MaxDepth = 3
+
+var Checks = []func(*token.FileSet, *goast.File) []interfaces.Finding{
+	checks.GL1,
+	checks.GL2,
+	checks.GL3,
+	checks.GL4,
+	checks.GL5,
+	checks.GL6,
+	checks.GL7,
+}
 
 func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding, depth int, currentDepth int) []interfaces.Finding {
 	files, err := os.ReadDir(dirname)
