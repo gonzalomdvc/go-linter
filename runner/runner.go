@@ -22,6 +22,7 @@ var Checks = []func(*token.FileSet, *goast.File) []interfaces.Finding{
 	checks.GL5,
 	checks.GL6,
 	checks.GL7,
+	checks.GL8,
 }
 
 func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding, depth int, currentDepth int, parallel bool) []interfaces.Finding {
