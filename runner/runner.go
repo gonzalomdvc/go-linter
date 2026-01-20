@@ -24,7 +24,7 @@ var Checks = []func(*token.FileSet, *goast.File) []interfaces.Finding{
 	checks.GL7,
 }
 
-func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding, depth int, currentDepth int) []interfaces.Finding {
+func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding, depth int, currentDepth int, parallel bool) []interfaces.Finding {
 	files, err := os.ReadDir(dirname)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading source code files: %s", err))
@@ -44,7 +44,7 @@ func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) 
 				continue
 			}
 			subDirPath := dirname + string(os.PathSeparator) + file.Name()
-			subDirFindings := RunLinterChecks(subDirPath, checks, depth, currentDepth+1)
+			subDirFindings := RunLinterChecks(subDirPath, checks, depth, currentDepth+1, parallel)
 			if len(subDirFindings) > 0 {
 				findings = append(findings, subDirFindings...)
 			}
@@ -61,6 +61,17 @@ func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) 
 		}
 	}
 
+	if parallel {
+		findings = append(findings, runChecksInParallel(srcFiles, checks)...)
+	} else {
+		findings = append(findings, runChecksSerially(srcFiles, checks)...)
+	}
+
+	return findings
+}
+
+func runChecksInParallel(srcFiles []string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding) []interfaces.Finding {
+	var findings []interfaces.Finding
 	totalJobs := len(srcFiles) * len(checks)
 	if totalJobs == 0 {
 		return nil
@@ -86,5 +97,22 @@ func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) 
 		findings = append(findings, res...)
 	}
 	close(resultsCh)
+	return findings
+}
+
+func runChecksSerially(srcFiles []string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding) []interfaces.Finding {
+	var findings []interfaces.Finding
+	for _, filePath := range srcFiles {
+		astFile, fset, err := ast.GetAst(filePath)
+		if err != nil {
+			panic(fmt.Sprintf("Error generating AST for file %s: %s", filePath, err))
+		}
+		for _, check := range checks {
+			res := check(fset, astFile)
+			if len(res) > 0 {
+				findings = append(findings, res...)
+			}
+		}
+	}
 	return findings
 }
