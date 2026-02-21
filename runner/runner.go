@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/gonzalomdvc/go-linter/ast"
 	"github.com/gonzalomdvc/go-linter/checks"
@@ -24,6 +25,7 @@ var Checks = []func(*token.FileSet, *goast.File) []interfaces.Finding{
 	checks.GL7,
 	checks.GL8,
 	checks.GL9,
+	checks.GL10,
 }
 
 func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding, depth int, currentDepth int, parallel bool) []interfaces.Finding {
@@ -34,6 +36,9 @@ func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) 
 	var findings []interfaces.Finding
 	var srcFiles []string
 	for _, file := range files {
+		if strings.Contains(file.Name(), "helper") {
+			continue
+		}
 		if file.IsDir() {
 			if currentDepth > MaxDepth {
 				fmt.Printf("Max depth of %d nested directories reached. Skipping directory: %s\n", MaxDepth, file.Name())
