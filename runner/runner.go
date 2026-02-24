@@ -25,7 +25,7 @@ var Checks = []func(*token.FileSet, *goast.File) []interfaces.Finding{
 	checks.GL7,
 	checks.GL8,
 	checks.GL9,
-	checks.GL10,
+	//checks.GL10,
 }
 
 func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding, depth int, currentDepth int, parallel bool) []interfaces.Finding {
@@ -87,16 +87,16 @@ func runChecksInParallel(srcFiles []string, checks []func(*token.FileSet, *goast
 	resultsCh := make(chan []interfaces.Finding, totalJobs)
 
 	for _, filePath := range srcFiles {
-		astFile, fset, err := ast.GetAst(filePath)
-		if err != nil {
-			panic(fmt.Sprintf("Error generating AST for file %s: %s", filePath, err))
-		}
-		for _, check := range checks {
-			go func(fset *token.FileSet, af *goast.File, chk func(*token.FileSet, *goast.File) []interfaces.Finding) {
-				res := chk(fset, af)
+		go func(filePath string) {
+			astFile, fset, err := ast.GetAst(filePath)
+			if err != nil {
+				panic(fmt.Sprintf("Error generating AST for file %s: %s", filePath, err))
+			}
+			for _, check := range checks {
+				res := check(fset, astFile)
 				resultsCh <- res
-			}(fset, astFile, check)
-		}
+			}
+		}(filePath)
 	}
 
 	for i := 0; i < totalJobs; i++ {

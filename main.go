@@ -12,7 +12,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	findings := runner.RunLinterChecks(dir, runner.Checks, 3, 0, false)
+	findings := runner.RunLinterChecks(dir, runner.Checks, 3, 0, true /* run in parallel */)
 	if len(findings) > 0 {
 		ui.PrintFindings(findings)
 		os.Exit(1)
