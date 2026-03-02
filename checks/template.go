@@ -9,7 +9,7 @@ import (
 	"github.com/gonzalomdvc/go-linter/interfaces"
 )
 
-func GLX(fset *token.FileSet, file *ast.File) []interfaces.Finding {
+func GLX(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfaces.Finding {
 	ast.Inspect(file, func(n ast.Node) bool {
 		// Implementation
 		return true

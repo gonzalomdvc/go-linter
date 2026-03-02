@@ -9,7 +9,7 @@ import (
 	"github.com/gonzalomdvc/go-linter/interfaces"
 )
 
-func GL3(fset *token.FileSet, file *ast.File) []interfaces.Finding {
+func GL3(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfaces.Finding {
 	var findings []interfaces.Finding
 	ast.Inspect(file, func(n ast.Node) bool {
 		fd, ok := n.(*ast.FuncDecl)

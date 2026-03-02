@@ -10,7 +10,7 @@ import (
 	"github.com/gonzalomdvc/go-linter/interfaces"
 )
 
-func GL6(fset *token.FileSet, file *ast.File) []interfaces.Finding {
+func GL6(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfaces.Finding {
 	var findings []interfaces.Finding
 	var checkedIfs map[token.Pos]bool = make(map[token.Pos]bool)
 	ast.Inspect(file, func(n ast.Node) bool {

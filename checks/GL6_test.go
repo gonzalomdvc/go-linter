@@ -14,7 +14,7 @@ func Test_GL6(t *testing.T) {
 			Line:   4,
 		},
 	}
-	err := test.RunCheckTest("GL6.go", true, positions, GL6)
+	err := test.RunCheckTest("GL6.go", true, positions, GL6, &interfaces.State{})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)

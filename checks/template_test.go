@@ -9,7 +9,7 @@ import (
 
 func _(t *testing.T) {
 	positions := []interfaces.Position{}
-	err := test.RunCheckTest("set file here []", true, positions, GLX)
+	err := test.RunCheckTest("set file here []", true, positions, GLX, &interfaces.State{})
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

@@ -10,3 +10,14 @@ func GL6(number int) int {
 	}
 	return 0
 }
+
+func GL6FalseNegative(number int) int {
+	if number == 1 {
+		return 10
+	} else if number == 2 {
+		return 20
+	} else if 3 == number {
+		return 30
+	}
+	return 0
+}

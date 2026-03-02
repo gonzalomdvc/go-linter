@@ -19,7 +19,7 @@ func Test_GL2(t *testing.T) {
 		},
 	}
 
-	err := test.RunCheckTest("GL2.go", true, positions, GL2)
+	err := test.RunCheckTest("GL2.go", true, positions, GL2, &interfaces.State{})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)

@@ -2,8 +2,6 @@ package runner
 
 import (
 	"fmt"
-	goast "go/ast"
-	"go/token"
 	"os"
 	"regexp"
 	"strings"
@@ -11,11 +9,12 @@ import (
 	"github.com/gonzalomdvc/go-linter/ast"
 	"github.com/gonzalomdvc/go-linter/checks"
 	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/packages"
 )
 
 var MaxDepth = 3
 
-var Checks = []func(*token.FileSet, *goast.File) []interfaces.Finding{
+var Checks = []interfaces.CheckFunc{
 	checks.GL1,
 	checks.GL2,
 	checks.GL3,
@@ -25,10 +24,10 @@ var Checks = []func(*token.FileSet, *goast.File) []interfaces.Finding{
 	checks.GL7,
 	checks.GL8,
 	checks.GL9,
-	//checks.GL10,
+	checks.GL10,
 }
 
-func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding, depth int, currentDepth int, parallel bool) []interfaces.Finding {
+func RunLinterChecks(dirname string, checks []interfaces.CheckFunc, depth int, currentDepth int, parallel bool) []interfaces.Finding {
 	files, err := os.ReadDir(dirname)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading source code files: %s", err))
@@ -77,26 +76,37 @@ func RunLinterChecks(dirname string, checks []func(*token.FileSet, *goast.File) 
 	return findings
 }
 
-func runChecksInParallel(srcFiles []string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding) []interfaces.Finding {
+func runChecksInParallel(srcFiles []string, checks []interfaces.CheckFunc) []interfaces.Finding {
+	state := &interfaces.State{Packages: make(map[string]interfaces.Package)}
 	var findings []interfaces.Finding
 	totalJobs := len(srcFiles) * len(checks)
 	if totalJobs == 0 {
 		return nil
 	}
 
+	funcDeclsCh := make(chan packages.FuncDeclResult, totalJobs)
 	resultsCh := make(chan []interfaces.Finding, totalJobs)
 
+	go func() {
+		for funcDeclResult := range funcDeclsCh {
+			if _, exists := state.Packages[funcDeclResult.PackagePath]; !exists {
+				state.Packages[funcDeclResult.PackagePath] = interfaces.Package{FuncDecls: funcDeclResult.FuncDecls}
+			}
+		}
+	}()
+
 	for _, filePath := range srcFiles {
-		go func(filePath string) {
+		go func(filePath string, state *interfaces.State) {
 			astFile, fset, err := ast.GetAst(filePath)
+			packages.ImportPackages(astFile, funcDeclsCh)
 			if err != nil {
 				panic(fmt.Sprintf("Error generating AST for file %s: %s", filePath, err))
 			}
 			for _, check := range checks {
-				res := check(fset, astFile)
+				res := check(fset, astFile, state)
 				resultsCh <- res
 			}
-		}(filePath)
+		}(filePath, state)
 	}
 
 	for i := 0; i < totalJobs; i++ {
@@ -107,7 +117,8 @@ func runChecksInParallel(srcFiles []string, checks []func(*token.FileSet, *goast
 	return findings
 }
 
-func runChecksSerially(srcFiles []string, checks []func(*token.FileSet, *goast.File) []interfaces.Finding) []interfaces.Finding {
+func runChecksSerially(srcFiles []string, checks []interfaces.CheckFunc) []interfaces.Finding {
+	state := &interfaces.State{}
 	var findings []interfaces.Finding
 	for _, filePath := range srcFiles {
 		astFile, fset, err := ast.GetAst(filePath)
@@ -115,7 +126,7 @@ func runChecksSerially(srcFiles []string, checks []func(*token.FileSet, *goast.F
 			panic(fmt.Sprintf("Error generating AST for file %s: %s", filePath, err))
 		}
 		for _, check := range checks {
-			res := check(fset, astFile)
+			res := check(fset, astFile, state)
 			if len(res) > 0 {
 				findings = append(findings, res...)
 			}

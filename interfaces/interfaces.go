@@ -2,12 +2,21 @@ package interfaces
 
 import (
 	"go/ast"
+	goast "go/ast"
 	"go/token"
 )
 
+type State struct {
+	Packages map[string]Package
+}
+
+type Package struct {
+	FuncDecls []*ast.FuncDecl
+}
+
 type Check struct {
 	Name    string
-	Func    func(*token.FileSet, *ast.File) []Finding
+	Func    func(*token.FileSet, *ast.File, *State) []Finding
 	Message string
 }
 
@@ -23,3 +32,5 @@ type Position struct {
 	Column int
 	Line   int
 }
+
+type CheckFunc func(fset *token.FileSet, astFile *goast.File, state *State) []Finding

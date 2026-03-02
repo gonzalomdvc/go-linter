@@ -23,3 +23,18 @@ func GetAst(fileName string) (*ast.File, *token.FileSet, error) {
 func PrintAst(fset *token.FileSet, astFile *ast.File) {
 	ast.Print(fset, astFile)
 }
+
+func GetFuncDecls(astFiles []*ast.File) []*ast.FuncDecl {
+	funcDecls := []*ast.FuncDecl{}
+	for _, astFile := range astFiles {
+		ast.Inspect(astFile, func(n ast.Node) bool {
+			decl, ok := n.(*ast.FuncDecl)
+			if !ok {
+				return true
+			}
+			funcDecls = append(funcDecls, decl)
+			return true
+		})
+	}
+	return funcDecls
+}

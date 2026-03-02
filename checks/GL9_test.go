@@ -14,7 +14,7 @@ func Test_GL9(t *testing.T) {
 			Line:   6,
 		},
 	}
-	err := test.RunCheckTest("GL9.go", true, positions, GL9)
+	err := test.RunCheckTest("GL9.go", true, positions, GL9, &interfaces.State{})
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

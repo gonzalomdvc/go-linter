@@ -14,7 +14,7 @@ func Test_GL8(t *testing.T) {
 			Line:   7,
 		},
 	}
-	err := test.RunCheckTest("GL8.go", true, positions, GL8)
+	err := test.RunCheckTest("GL8.go", true, positions, GL8, &interfaces.State{})
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

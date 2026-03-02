@@ -2,21 +2,19 @@ package test
 
 import (
 	"fmt"
-	goast "go/ast"
-	"go/token"
 
 	"github.com/gonzalomdvc/go-linter/ast"
 	"github.com/gonzalomdvc/go-linter/interfaces"
 	"github.com/gonzalomdvc/go-linter/ui"
 )
 
-func RunCheckTest(filename string, verbose bool, positions []interfaces.Position, checkFunc func(fset *token.FileSet, astFile *goast.File) []interfaces.Finding) error {
+func RunCheckTest(filename string, verbose bool, positions []interfaces.Position, checkFunc interfaces.CheckFunc, state *interfaces.State) error {
 	astFile, fset, err := ast.GetAst(fmt.Sprintf("../test/%s", filename))
 	if err != nil {
 		return fmt.Errorf("Expected no error, got %v", err)
 	}
 
-	findings := checkFunc(fset, astFile)
+	findings := checkFunc(fset, astFile, state)
 
 	foundPositions := make(map[interfaces.Position]bool)
 	for _, pos := range positions {
