@@ -30,7 +30,7 @@ func Test_GL10(t *testing.T) {
 	}()
 
 	astFile, _, err := ast.GetAst("../test/GL10.go")
-	packages.ImportPackages(astFile, funcDeclsCh)
+	packages.ImportPackages(astFile, funcDeclsCh, state)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

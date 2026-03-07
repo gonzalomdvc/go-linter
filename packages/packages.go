@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gonzalomdvc/go-linter/ast"
+	"github.com/gonzalomdvc/go-linter/interfaces"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -14,13 +15,17 @@ type FuncDeclResult struct {
 	FuncDecls   []*goast.FuncDecl
 }
 
-func ImportPackages(astFile *goast.File, funcDecls chan FuncDeclResult) {
+func ImportPackages(astFile *goast.File, funcDecls chan FuncDeclResult, state *interfaces.State) {
 	packageAddresses := []string{}
-	cfg := &packages.Config{Mode: packages.NeedName | packages.NeedFiles | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo}
+	cfg := &packages.Config{Mode: packages.NeedName | packages.NeedFiles | packages.NeedSyntax}
 	goast.Inspect(astFile, func(n goast.Node) bool {
 		im, ok := n.(*goast.ImportSpec)
 		if ok {
-			packageAddresses = append(packageAddresses, strings.Trim(im.Path.Value, `"`))
+			trimmedPath := strings.Trim(im.Path.Value, `"`)
+			if state.Packages[trimmedPath].FuncDecls != nil {
+				return true
+			}
+			packageAddresses = append(packageAddresses, trimmedPath)
 		}
 
 		return true

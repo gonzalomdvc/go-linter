@@ -106,7 +106,7 @@ func RunLinterChecks(dirname string, checks []interfaces.CheckFunc, depth int, c
 			}
 			// Store the AST and FileSet in the state for later use by checks
 			astFileCh <- interfaces.SourceAst{Fset: fset, AstFile: astFile}
-			packages.ImportPackages(astFile, funcDeclsCh)
+			packages.ImportPackages(astFile, funcDeclsCh, state)
 		}(filePath)
 
 	}
