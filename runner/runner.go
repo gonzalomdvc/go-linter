@@ -13,7 +13,7 @@ import (
 	"github.com/gonzalomdvc/go-linter/packages"
 )
 
-var MaxDepth = 3
+var MaxDepth = 20
 
 var Checks = []interfaces.CheckFunc{
 	checks.GL1,
