@@ -7,7 +7,13 @@ import (
 )
 
 type State struct {
-	Packages map[string]Package
+	SourceAsts map[string]SourceAst
+	Packages   map[string]Package
+}
+
+type SourceAst struct {
+	Fset    *token.FileSet
+	AstFile *ast.File
 }
 
 type Package struct {
