@@ -29,7 +29,7 @@ func GetFuncDecls(astFiles []*ast.File) []*ast.FuncDecl {
 	for _, astFile := range astFiles {
 		ast.Inspect(astFile, func(n ast.Node) bool {
 			decl, ok := n.(*ast.FuncDecl)
-			if !ok {
+			if !ok || decl.Name.String()[0] < 'A' || decl.Name.String()[0] > 'Z' {
 				return true
 			}
 			funcDecls = append(funcDecls, decl)
