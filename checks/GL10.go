@@ -9,11 +9,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/model"
+	"github.com/gonzalomdvc/go-linter/packages"
 )
 
-func GL10(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfaces.Finding {
-	findings := []interfaces.Finding{}
+func GL10(fset *token.FileSet, file *ast.File, state *packages.State) []model.Finding {
+	findings := []model.Finding{}
 	packageAddresses := []string{}
 	callExprs := map[string]*ast.CallExpr{}
 	ast.Inspect(file, func(n ast.Node) bool {
@@ -48,13 +49,9 @@ func GL10(fset *token.FileSet, file *ast.File, state *interfaces.State) []interf
 			}
 			for _, comment := range decl.Doc.List {
 				if strings.Contains(comment.Text, "Deprecated") {
-					findings = append(findings, interfaces.Finding{
+					findings = append(findings, model.Finding{
 						Position: fset.Position(matched.Pos()),
-						Check: interfaces.Check{
-							Name:    "GL10",
-							Func:    GL10,
-							Message: fmt.Sprintf("Function %s is deprecated: %s", decl.Name.Name, strings.TrimSpace(strings.Split(comment.Text, "Deprecated:")[1])),
-						},
+						Message:  fmt.Sprintf("Function %s is deprecated: %s", decl.Name.Name, strings.TrimSpace(strings.Split(comment.Text, "Deprecated:")[1])),
 					})
 					break
 				}

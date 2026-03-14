@@ -3,12 +3,11 @@ package checks
 import (
 	"testing"
 
-	"github.com/gonzalomdvc/go-linter/interfaces"
-	"github.com/gonzalomdvc/go-linter/test"
+	"github.com/gonzalomdvc/go-linter/packages"
 )
 
 func Test_GL2(t *testing.T) {
-	positions := []interfaces.Position{
+	positions := []Position{
 		{
 			Column: 2,
 			Line:   4,
@@ -19,7 +18,7 @@ func Test_GL2(t *testing.T) {
 		},
 	}
 
-	err := test.RunCheckTest("GL2.go", true, positions, GL2, &interfaces.State{})
+	err := RunCheckTest("GL2.go", true, positions, GL2, &packages.State{})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)

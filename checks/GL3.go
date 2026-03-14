@@ -6,11 +6,12 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/model"
+	"github.com/gonzalomdvc/go-linter/packages"
 )
 
-func GL3(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfaces.Finding {
-	var findings []interfaces.Finding
+func GL3(fset *token.FileSet, file *ast.File, state *packages.State) []model.Finding {
+	var findings []model.Finding
 	ast.Inspect(file, func(n ast.Node) bool {
 		fd, ok := n.(*ast.FuncDecl)
 		if !ok || fd.Body == nil {
@@ -38,13 +39,9 @@ func GL3(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfa
 		})
 
 		if selfCall != nil && !hasReturn {
-			findings = append(findings, interfaces.Finding{
+			findings = append(findings, model.Finding{
 				Position: fset.Position(selfCall.Pos()),
-				Check: interfaces.Check{
-					Name:    "GL3",
-					Func:    GL3,
-					Message: "Recursive function without exit condition",
-				},
+				Message:  "Recursive function without exit condition",
 			})
 		}
 

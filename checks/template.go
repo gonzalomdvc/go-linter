@@ -6,14 +6,15 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/model"
+	"github.com/gonzalomdvc/go-linter/packages"
 )
 
-func GLX(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfaces.Finding {
+func GLX(fset *token.FileSet, file *ast.File, state *packages.State) []model.Finding {
 	ast.Inspect(file, func(n ast.Node) bool {
 		// Implementation
 		return true
 	})
 	// Implementation
-	return []interfaces.Finding{}
+	return []model.Finding{}
 }

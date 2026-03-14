@@ -6,37 +6,31 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/model"
+	"github.com/gonzalomdvc/go-linter/packages"
 )
 
-func GL2(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfaces.Finding {
-	var findings []interfaces.Finding
+func GL2(fset *token.FileSet, file *ast.File, state *packages.State) []model.Finding {
+	var findings []model.Finding
 
 	ast.Inspect(file, func(n ast.Node) bool {
 		switch x := n.(type) {
 		case *ast.IfStmt:
 			if len(x.Body.List) == 0 {
-				findings = append(findings, interfaces.Finding{
+				findings = append(findings, model.Finding{
 					Position: fset.Position(n.Pos()),
-					Check: interfaces.Check{
-						Name:    "GL2",
-						Func:    GL2,
-						Message: "Empty if statement body",
-					},
+					Message:  "Empty if statement body",
 				})
 			}
 
 			if x.Else != nil {
 				if elseBlock, ok := x.Else.(*ast.BlockStmt); ok {
 					if len(elseBlock.List) == 0 {
-						findings = append(findings, interfaces.Finding{
+						findings = append(findings, model.Finding{
 							Position: fset.Position(x.Else.Pos()),
-							Check: interfaces.Check{
-								Name:    "GL2",
-								Func:    GL2,
-								Message: "Empty else statement body",
-							},
+							Message:  "Empty else statement body",
 						})
+
 					}
 				}
 			}

@@ -7,11 +7,12 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/model"
+	"github.com/gonzalomdvc/go-linter/packages"
 )
 
-func GL6(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfaces.Finding {
-	var findings []interfaces.Finding
+func GL6(fset *token.FileSet, file *ast.File, state *packages.State) []model.Finding {
+	var findings []model.Finding
 	var checkedIfs map[token.Pos]bool = make(map[token.Pos]bool)
 	ast.Inspect(file, func(n ast.Node) bool {
 		var variable *ast.Ident
@@ -51,13 +52,9 @@ func GL6(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfa
 			}
 
 			if variable != nil && caseCount >= minCases {
-				findings = append(findings, interfaces.Finding{
+				findings = append(findings, model.Finding{
 					Position: fset.Position(n.Pos()),
-					Check: interfaces.Check{
-						Name:    "GL6",
-						Func:    GL6,
-						Message: fmt.Sprintf("If-Else statements over a single variable %s should be written as switch-case", variable.Name),
-					},
+					Message:  fmt.Sprintf("If-Else statements over a single variable %s should be written as switch-case", variable.Name),
 				})
 			}
 

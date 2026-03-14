@@ -8,11 +8,12 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/model"
+	"github.com/gonzalomdvc/go-linter/packages"
 )
 
-func GL5(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfaces.Finding {
-	var findings []interfaces.Finding
+func GL5(fset *token.FileSet, file *ast.File, state *packages.State) []model.Finding {
+	var findings []model.Finding
 	ast.Inspect(file, func(n ast.Node) bool {
 		var call bool = false
 		if expr, ok := n.(*ast.CallExpr); ok {
@@ -30,13 +31,9 @@ func GL5(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfa
 				if firstArg.Kind == token.STRING && len(firstArg.Value) >= 2 {
 					match := firstArg.Value[len(firstArg.Value)-3:len(firstArg.Value)-1] == "\\n"
 					if match {
-						findings = append(findings, interfaces.Finding{
+						findings = append(findings, model.Finding{
 							Position: fset.Position(n.Pos()),
-							Check: interfaces.Check{
-								Name:    "GL5",
-								Func:    GL5,
-								Message: "fmt.Println already adds a new line, no need to include \\n in the string",
-							},
+							Message:  "fmt.Println already adds a new line, no need to include \\n in the string",
 						})
 					}
 				}

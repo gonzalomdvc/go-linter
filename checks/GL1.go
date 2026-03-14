@@ -7,11 +7,12 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/model"
+	"github.com/gonzalomdvc/go-linter/packages"
 )
 
-func GL1(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfaces.Finding {
-	var findings []interfaces.Finding
+func GL1(fset *token.FileSet, file *ast.File, state *packages.State) []model.Finding {
+	var findings []model.Finding
 	ast.Inspect(file, func(n ast.Node) bool {
 		switch x := n.(type) {
 		case *ast.DeclStmt:
@@ -31,13 +32,9 @@ func GL1(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfa
 									return true
 								})
 								if !used {
-									findings = append(findings, interfaces.Finding{
+									findings = append(findings, model.Finding{
 										Position: fset.Position(n.Pos()),
-										Check: interfaces.Check{
-											Name:    "GL1",
-											Func:    GL1,
-											Message: fmt.Sprintf("Unused variable: %s", name.Name),
-										},
+										Message:  fmt.Sprintf("Unused variable: %s", name.Name),
 									})
 
 								}

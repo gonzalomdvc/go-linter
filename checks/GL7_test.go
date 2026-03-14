@@ -3,18 +3,17 @@ package checks
 import (
 	"testing"
 
-	"github.com/gonzalomdvc/go-linter/interfaces"
-	"github.com/gonzalomdvc/go-linter/test"
+	"github.com/gonzalomdvc/go-linter/packages"
 )
 
 func Test_GL7(t *testing.T) {
-	positions := []interfaces.Position{
+	positions := []Position{
 		{
 			Column: 1,
 			Line:   7,
 		},
 	}
-	err := test.RunCheckTest("GL7.go", true, positions, GL7, &interfaces.State{})
+	err := RunCheckTest("GL7.go", true, positions, GL7, &packages.State{})
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

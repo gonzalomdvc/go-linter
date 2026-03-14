@@ -9,13 +9,13 @@ import (
 
 	"github.com/gonzalomdvc/go-linter/ast"
 	"github.com/gonzalomdvc/go-linter/checks"
-	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/model"
 	"github.com/gonzalomdvc/go-linter/packages"
 )
 
 var MaxDepth = 20
 
-var Checks = []interfaces.CheckFunc{
+var Checks = []checks.CheckFunc{
 	checks.GL1,
 	checks.GL2,
 	checks.GL3,
@@ -28,12 +28,16 @@ var Checks = []interfaces.CheckFunc{
 	checks.GL10,
 }
 
-func RunLinterChecks(dirname string, checks []interfaces.CheckFunc, depth int, currentDepth int, parallel bool) []interfaces.Finding {
+var ChecksNeedState = []checks.CheckFunc{
+	checks.GL10,
+}
+
+func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, currentDepth int, parallel bool) []model.Finding {
 	files, err := os.ReadDir(dirname)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading source code files: %s", err))
 	}
-	var findings []interfaces.Finding
+	var findings []model.Finding
 	var srcFiles []string
 	for _, file := range files {
 		if strings.Contains(file.Name(), "helper") {
@@ -51,9 +55,9 @@ func RunLinterChecks(dirname string, checks []interfaces.CheckFunc, depth int, c
 				continue
 			}
 			subDirPath := dirname + string(os.PathSeparator) + file.Name()
-			subDirFindings := RunLinterChecks(subDirPath, checks, depth, currentDepth+1, parallel)
-			if len(subDirFindings) > 0 {
-				findings = append(findings, subDirFindings...)
+			subDirfindings := RunLinterChecks(subDirPath, checkFuncs, depth, currentDepth+1, parallel)
+			if len(subDirfindings) > 0 {
+				findings = append(findings, subDirfindings...)
 			}
 
 			continue
@@ -70,11 +74,10 @@ func RunLinterChecks(dirname string, checks []interfaces.CheckFunc, depth int, c
 
 	// We will pass state containing auxiliary information to the checks, such as function declarations, to avoid redundant parsing and improve performance.
 	var wg sync.WaitGroup
-	// Wait only for file parsing goroutines
 	wg.Add(len(srcFiles))
-	state := &interfaces.State{Packages: make(map[string]interfaces.Package), SourceAsts: make(map[string]interfaces.SourceAst)}
+	state := &packages.State{Packages: make(map[string]packages.Package), SourceAsts: make(map[string]packages.SourceAst)}
 	funcDeclsCh := make(chan packages.FuncDeclResult, 10)
-	astFileCh := make(chan interfaces.SourceAst, 10)
+	astFileCh := make(chan packages.SourceAst, 10)
 
 	// Single consumer for funcDeclsCh — will exit when channel is closed
 	var consumerWg sync.WaitGroup
@@ -83,7 +86,7 @@ func RunLinterChecks(dirname string, checks []interfaces.CheckFunc, depth int, c
 		defer consumerWg.Done()
 		for funcDeclResult := range funcDeclsCh {
 			if _, exists := state.Packages[funcDeclResult.PackagePath]; !exists {
-				state.Packages[funcDeclResult.PackagePath] = interfaces.Package{FuncDecls: funcDeclResult.FuncDecls}
+				state.Packages[funcDeclResult.PackagePath] = packages.Package{FuncDecls: funcDeclResult.FuncDecls}
 			}
 		}
 	}()
@@ -105,7 +108,7 @@ func RunLinterChecks(dirname string, checks []interfaces.CheckFunc, depth int, c
 				return
 			}
 			// Store the AST and FileSet in the state for later use by checks
-			astFileCh <- interfaces.SourceAst{Fset: fset, AstFile: astFile}
+			astFileCh <- packages.SourceAst{Fset: fset, AstFile: astFile}
 			packages.ImportPackages(astFile, funcDeclsCh, state)
 		}(filePath)
 
@@ -118,28 +121,28 @@ func RunLinterChecks(dirname string, checks []interfaces.CheckFunc, depth int, c
 	consumerWg.Wait()
 
 	if parallel {
-		findings = append(findings, runChecksInParallel(srcFiles, checks, state)...)
+		findings = append(findings, runChecksInParallel(srcFiles, checkFuncs, state)...)
 	} else {
-		findings = append(findings, runChecksSerially(srcFiles, checks, state)...)
+		findings = append(findings, runChecksSerially(srcFiles, checkFuncs, state)...)
 	}
 
 	return findings
 }
 
-func runChecksInParallel(srcFiles []string, checks []interfaces.CheckFunc, state *interfaces.State) []interfaces.Finding {
+func runChecksInParallel(srcFiles []string, checkFuncs []checks.CheckFunc, state *packages.State) []model.Finding {
 
-	var findings []interfaces.Finding
-	totalJobs := len(srcFiles) * len(checks)
+	var findings []model.Finding
+	totalJobs := len(srcFiles) * len(checkFuncs)
 	if totalJobs == 0 {
 		return nil
 	}
 
-	resultsCh := make(chan []interfaces.Finding, 10)
+	resultsCh := make(chan []model.Finding, 10)
 
 	for _, filePath := range srcFiles {
-		go func(filePath string, state *interfaces.State) {
+		go func(filePath string, state *packages.State) {
 			astFile, fset := state.SourceAsts[filePath].AstFile, state.SourceAsts[filePath].Fset
-			for _, check := range checks {
+			for _, check := range checkFuncs {
 				res := check(fset, astFile, state)
 				resultsCh <- res
 			}
@@ -154,11 +157,11 @@ func runChecksInParallel(srcFiles []string, checks []interfaces.CheckFunc, state
 	return findings
 }
 
-func runChecksSerially(srcFiles []string, checks []interfaces.CheckFunc, state *interfaces.State) []interfaces.Finding {
-	var findings []interfaces.Finding
+func runChecksSerially(srcFiles []string, checkFuncs []checks.CheckFunc, state *packages.State) []model.Finding {
+	var findings []model.Finding
 	for _, filePath := range srcFiles {
 		astFile, fset := state.SourceAsts[filePath].AstFile, state.SourceAsts[filePath].Fset
-		for _, check := range checks {
+		for _, check := range checkFuncs {
 			res := check(fset, astFile, state)
 			if len(res) > 0 {
 				findings = append(findings, res...)

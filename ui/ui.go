@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/model"
 )
 
 const BUFFER_SIZE = 100
@@ -28,9 +28,9 @@ func PrintPosition(pos token.Position, message string) (string, error) {
 	return output, nil
 }
 
-func PrintFindings(findings []interfaces.Finding) error {
+func Printfindings(findings []model.Finding) error {
 	for _, finding := range findings {
-		pos, err := PrintPosition(finding.Position, finding.Check.Message)
+		pos, err := PrintPosition(finding.Position, finding.Message)
 		if err != nil {
 			return fmt.Errorf("Error printing position: %v", err)
 		} else {

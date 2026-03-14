@@ -1,14 +1,19 @@
-package test
+package checks
 
 import (
 	"fmt"
 
 	"github.com/gonzalomdvc/go-linter/ast"
-	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/packages"
 	"github.com/gonzalomdvc/go-linter/ui"
 )
 
-func RunCheckTest(filename string, verbose bool, positions []interfaces.Position, checkFunc interfaces.CheckFunc, state *interfaces.State) error {
+type Position struct {
+	Column int
+	Line   int
+}
+
+func RunCheckTest(filename string, verbose bool, positions []Position, checkFunc CheckFunc, state *packages.State) error {
 	astFile, fset, err := ast.GetAst(fmt.Sprintf("../test/%s", filename))
 	if err != nil {
 		return fmt.Errorf("Expected no error, got %v", err)
@@ -16,16 +21,16 @@ func RunCheckTest(filename string, verbose bool, positions []interfaces.Position
 
 	findings := checkFunc(fset, astFile, state)
 
-	foundPositions := make(map[interfaces.Position]bool)
+	foundPositions := make(map[Position]bool)
 	for _, pos := range positions {
 		foundPositions[pos] = false
 	}
 	for _, finding := range findings {
-		pos := interfaces.Position{
+		pos := Position{
 			Column: finding.Position.Column,
 			Line:   finding.Position.Line,
 		}
-		fmt.Printf("Detected finding at position: Column: %d, Line: %d\n", pos.Column, pos.Line)
+		fmt.Printf("Detected model.Finding at position: Column: %d, Line: %d\n", pos.Column, pos.Line)
 		foundPositions[pos] = true
 	}
 	for pos := range foundPositions {
@@ -34,7 +39,7 @@ func RunCheckTest(filename string, verbose bool, positions []interfaces.Position
 		}
 	}
 	if verbose {
-		err = ui.PrintFindings(findings)
+		err = ui.Printfindings(findings)
 		if err != nil {
 			return fmt.Errorf("Expected no error printing findings, got %v", err)
 		}

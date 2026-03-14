@@ -6,11 +6,12 @@ import (
 	"go/ast"
 	"go/token"
 
-	"github.com/gonzalomdvc/go-linter/interfaces"
+	"github.com/gonzalomdvc/go-linter/model"
+	"github.com/gonzalomdvc/go-linter/packages"
 )
 
-func GL4(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfaces.Finding {
-	var findings []interfaces.Finding
+func GL4(fset *token.FileSet, file *ast.File, state *packages.State) []model.Finding {
+	var findings []model.Finding
 	ast.Inspect(file, func(n ast.Node) bool {
 		bop, ok := n.(*ast.BinaryExpr)
 		if !ok || bop.Op != token.EQL {
@@ -25,13 +26,9 @@ func GL4(fset *token.FileSet, file *ast.File, state *interfaces.State) []interfa
 			return true
 		}
 		if xlit.Value == ylit.Value {
-			findings = append(findings, interfaces.Finding{
+			findings = append(findings, model.Finding{
 				Position: fset.Position(bop.Pos()),
-				Check: interfaces.Check{
-					Name:    "GL4",
-					Func:    GL4,
-					Message: "Same expression on both sides of operand ==",
-				},
+				Message:  "Same expression on both sides of operand ==",
 			})
 		}
 		return true

@@ -14,7 +14,7 @@ func main() {
 	}
 	findings := runner.RunLinterChecks(dir, runner.Checks, 3, 0, true /* run in parallel */)
 	if len(findings) > 0 {
-		ui.PrintFindings(findings)
+		ui.Printfindings(findings)
 		os.Exit(1)
 	} else {
 		ui.PrintSuccessfulMessage()
