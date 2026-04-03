@@ -32,45 +32,13 @@ var ChecksNeedState = []checks.CheckFunc{
 	checks.GL10,
 }
 
-func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, currentDepth int, parallel bool) []model.Finding {
-	files, err := os.ReadDir(dirname)
+func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, parallel bool) []model.Finding {
+	// Get all source files in the directory and subdirectories up to the specified depth
+	srcFiles, err := getSourceFiles(dirname, depth, 0)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading source code files: %s", err))
 	}
 	var findings []model.Finding
-	var srcFiles []string
-	for _, file := range files {
-		if strings.Contains(file.Name(), "helper") {
-			continue
-		}
-		if file.IsDir() {
-			if currentDepth > MaxDepth {
-				fmt.Printf("Max depth of %d nested directories reached. Skipping directory: %s\n", MaxDepth, file.Name())
-				continue
-			}
-			if currentDepth > depth {
-				continue
-			}
-			if file.Name()[0] == '.' {
-				continue
-			}
-			subDirPath := dirname + string(os.PathSeparator) + file.Name()
-			subDirfindings := RunLinterChecks(subDirPath, checkFuncs, depth, currentDepth+1, parallel)
-			if len(subDirfindings) > 0 {
-				findings = append(findings, subDirfindings...)
-			}
-
-			continue
-		}
-		isSourceFile, err := regexp.MatchString(`\.go$`, file.Name())
-		if err != nil {
-			panic(fmt.Sprintf("Error matching file name: %s", err))
-		}
-		if isSourceFile {
-			path := dirname + string(os.PathSeparator) + file.Name()
-			srcFiles = append(srcFiles, path)
-		}
-	}
 
 	// We will pass state containing auxiliary information to the checks, such as function declarations, to avoid redundant parsing and improve performance.
 	var wg sync.WaitGroup
@@ -169,4 +137,46 @@ func runChecksSerially(srcFiles []string, checkFuncs []checks.CheckFunc, state *
 		}
 	}
 	return findings
+}
+
+func getSourceFiles(dirname string, depth, currentDepth int) ([]string, error) {
+	var srcFiles []string
+	files, err := os.ReadDir(dirname)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading source code files: %s", err)
+	}
+	for _, file := range files {
+		if strings.Contains(file.Name(), "helper") {
+			continue
+		}
+		if file.IsDir() {
+			if currentDepth > MaxDepth {
+				fmt.Printf("Max depth of %d nested directories reached. Skipping directory: %s\n", MaxDepth, file.Name())
+				continue
+			}
+			if currentDepth > depth {
+				continue
+			}
+			if file.Name()[0] == '.' {
+				continue
+			}
+			subDirPath := dirname + string(os.PathSeparator) + file.Name()
+			subDirFiles, err := getSourceFiles(subDirPath, depth, currentDepth+1)
+			if err != nil {
+				fmt.Printf("Error getting source files from directory %s: %s\n", subDirPath, err)
+				continue
+			}
+			srcFiles = append(srcFiles, subDirFiles...)
+			continue
+		}
+		isSourceFile, err := regexp.MatchString(`\.go$`, file.Name())
+		if err != nil {
+			panic(fmt.Sprintf("Error matching file name: %s", err))
+		}
+		if isSourceFile {
+			path := dirname + string(os.PathSeparator) + file.Name()
+			srcFiles = append(srcFiles, path)
+		}
+	}
+	return srcFiles, nil
 }
