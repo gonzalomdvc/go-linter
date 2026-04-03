@@ -2,6 +2,8 @@ package runner
 
 import (
 	"fmt"
+	goast "go/ast"
+	"go/token"
 	"os"
 	"regexp"
 	"strings"
@@ -39,6 +41,26 @@ func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, p
 		panic(fmt.Sprintf("Error reading source code files: %s", err))
 	}
 	var findings []model.Finding
+
+	var checksNeedingState []checks.CheckFunc
+	var checksNotNeedingState []checks.CheckFunc
+	for _, check := range checkFuncs {
+		if contains(ChecksNeedState, check) {
+			checksNeedingState = append(checksNeedingState, check)
+		} else {
+			checksNotNeedingState = append(checksNotNeedingState, check)
+			// We can run checks that don't need state in parallel without waiting for the state to be populated
+			if parallel {
+				findings = append(findings, runChecksInParallel(srcFiles, []checks.CheckFunc{check}, &packages.State{Packages: make(map[string]packages.Package), SourceAsts: make(map[string]packages.SourceAst)})...)
+			} else {
+				findings = append(findings, runChecksSerially(srcFiles, []checks.CheckFunc{check}, &packages.State{Packages: make(map[string]packages.Package), SourceAsts: make(map[string]packages.SourceAst)})...)
+			}
+		}
+	}
+
+	if len(checksNeedingState) == 0 {
+		return findings
+	}
 
 	// We will pass state containing auxiliary information to the checks, such as function declarations, to avoid redundant parsing and improve performance.
 	var wg sync.WaitGroup
@@ -109,7 +131,19 @@ func runChecksInParallel(srcFiles []string, checkFuncs []checks.CheckFunc, state
 
 	for _, filePath := range srcFiles {
 		go func(filePath string, state *packages.State) {
-			astFile, fset := state.SourceAsts[filePath].AstFile, state.SourceAsts[filePath].Fset
+			var astFile *goast.File
+			var fset *token.FileSet
+			var err error
+			if _, exists := state.SourceAsts[filePath]; !exists {
+				astFile, fset, err = ast.GetAst(filePath)
+				if err != nil {
+					fmt.Printf("Error generating AST for file %s: %s\n", filePath, err)
+					return
+				}
+
+			} else {
+				astFile, fset = state.SourceAsts[filePath].AstFile, state.SourceAsts[filePath].Fset
+			}
 			for _, check := range checkFuncs {
 				res := check(fset, astFile, state)
 				resultsCh <- res
@@ -128,13 +162,23 @@ func runChecksInParallel(srcFiles []string, checkFuncs []checks.CheckFunc, state
 func runChecksSerially(srcFiles []string, checkFuncs []checks.CheckFunc, state *packages.State) []model.Finding {
 	var findings []model.Finding
 	for _, filePath := range srcFiles {
-		astFile, fset := state.SourceAsts[filePath].AstFile, state.SourceAsts[filePath].Fset
+		var astFile *goast.File
+		var fset *token.FileSet
+		var err error
+		if _, exists := state.SourceAsts[filePath]; !exists {
+			astFile, fset, err = ast.GetAst(filePath)
+			if err != nil {
+				fmt.Printf("Error generating AST for file %s: %s\n", filePath, err)
+				continue
+			}
+		} else {
+			astFile, fset = state.SourceAsts[filePath].AstFile, state.SourceAsts[filePath].Fset
+		}
 		for _, check := range checkFuncs {
 			res := check(fset, astFile, state)
-			if len(res) > 0 {
-				findings = append(findings, res...)
-			}
+			findings = append(findings, res...)
 		}
+
 	}
 	return findings
 }
@@ -179,4 +223,13 @@ func getSourceFiles(dirname string, depth, currentDepth int) ([]string, error) {
 		}
 	}
 	return srcFiles, nil
+}
+
+func contains(checks []checks.CheckFunc, check checks.CheckFunc) bool {
+	for _, c := range checks {
+		if fmt.Sprintf("%p", c) == fmt.Sprintf("%p", check) {
+			return true
+		}
+	}
+	return false
 }
