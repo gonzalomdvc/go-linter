@@ -66,20 +66,9 @@ func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, p
 	var wg sync.WaitGroup
 	wg.Add(len(srcFiles))
 	state := &packages.State{Packages: make(map[string]packages.Package), SourceAsts: make(map[string]packages.SourceAst)}
-	funcDeclsCh := make(chan packages.FuncDeclResult, 10)
 	astFileCh := make(chan packages.SourceAst, 10)
 
-	// Single consumer for funcDeclsCh — will exit when channel is closed
 	var consumerWg sync.WaitGroup
-	consumerWg.Add(1)
-	go func() {
-		defer consumerWg.Done()
-		for funcDeclResult := range funcDeclsCh {
-			if _, exists := state.Packages[funcDeclResult.PackagePath]; !exists {
-				state.Packages[funcDeclResult.PackagePath] = packages.Package{FuncDecls: funcDeclResult.FuncDecls}
-			}
-		}
-	}()
 	consumerWg.Add(1)
 	go func() {
 		defer consumerWg.Done()
@@ -99,16 +88,24 @@ func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, p
 			}
 			// Store the AST and FileSet in the state for later use by checks
 			astFileCh <- packages.SourceAst{Fset: fset, AstFile: astFile}
-			packages.ImportPackages(astFile, funcDeclsCh, state)
 		}(filePath)
 
 	}
 
 	// Wait for all producers, then close the channel so the consumer can finish
 	wg.Wait()
-	close(funcDeclsCh)
 	close(astFileCh)
 	consumerWg.Wait()
+
+	funcDeclResults, err := packages.ImportPackagesFromState(state)
+	if err != nil {
+		fmt.Print("Packages not found in mod cache. Run go mod tidy to download")
+	}
+	for _, funcDeclResult := range funcDeclResults {
+		if _, exists := state.Packages[funcDeclResult.PackagePath]; !exists {
+			state.Packages[funcDeclResult.PackagePath] = packages.Package{FuncDecls: funcDeclResult.FuncDecls}
+		}
+	}
 
 	if parallel {
 		findings = append(findings, runChecksInParallel(srcFiles, checkFuncs, state)...)
