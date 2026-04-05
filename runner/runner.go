@@ -28,6 +28,7 @@ var Checks = []checks.CheckFunc{
 	checks.GL8,
 	checks.GL9,
 	checks.GL10,
+	checks.GL11,
 }
 
 var ChecksNeedState = []checks.CheckFunc{
