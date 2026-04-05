@@ -16,8 +16,7 @@ func main() {
 	if len(findings) > 0 {
 		ui.Printfindings(findings)
 		os.Exit(1)
-	} else {
-		ui.PrintSuccessfulMessage()
-		os.Exit(0)
 	}
+	ui.PrintSuccessfulMessage()
+	os.Exit(0)
 }

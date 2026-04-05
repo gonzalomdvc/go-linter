@@ -29,6 +29,7 @@ var Checks = []checks.CheckFunc{
 	checks.GL9,
 	checks.GL10,
 	checks.GL11,
+	checks.GL12,
 }
 
 var ChecksNeedState = []checks.CheckFunc{
@@ -118,7 +119,6 @@ func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, p
 }
 
 func runChecksInParallel(srcFiles []string, checkFuncs []checks.CheckFunc, state *packages.State) []model.Finding {
-
 	var findings []model.Finding
 	totalJobs := len(srcFiles) * len(checkFuncs)
 	if totalJobs == 0 {
