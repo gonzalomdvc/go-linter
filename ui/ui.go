@@ -43,3 +43,16 @@ func Printfindings(findings []model.Finding) error {
 func PrintSuccessfulMessage() {
 	fmt.Println("Go-linter ran successfully! No issues found.")
 }
+
+func PrintAt(pos token.Position) (string, error) {
+	file, err := os.Open(pos.Filename)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	buffer := make([]byte, BUFFER_SIZE)
+	file.ReadAt(buffer, int64(pos.Offset))
+	return strings.Split(string(buffer), "{")[0], nil
+
+}
