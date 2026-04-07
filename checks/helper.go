@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/gonzalomdvc/go-linter/ast"
 	"github.com/gonzalomdvc/go-linter/packages"
@@ -30,8 +31,11 @@ func RunCheckTest(filename string, verbose bool, positions []Position, checkFunc
 			Column: finding.Position.Column,
 			Line:   finding.Position.Line,
 		}
-		fmt.Printf("Detected model.Finding at position: Column: %d, Line: %d\n", pos.Column, pos.Line)
-		foundPositions[pos] = true
+		if !slices.Contains(positions, pos) {
+			return fmt.Errorf("Unexpected finding at position: Column: %d, Line: %d", pos.Column, pos.Line)
+		} else {
+			foundPositions[pos] = true
+		}
 	}
 	for pos := range foundPositions {
 		if foundPositions[pos] == false {

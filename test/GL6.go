@@ -11,7 +11,8 @@ func GL6(number int) int {
 	return 0
 }
 
-func GL6FalseNegative(number int) int {
+// This function is a false negative in staticcheck, but is supplemented by don't use Yoda conditions
+func GL6Alt(number int) int {
 	if number == 1 {
 		return 10
 	} else if number == 2 {

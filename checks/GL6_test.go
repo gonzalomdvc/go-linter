@@ -12,6 +12,10 @@ func Test_GL6(t *testing.T) {
 			Column: 2,
 			Line:   4,
 		},
+		{
+			Column: 2,
+			Line:   16,
+		},
 	}
 	err := RunCheckTest("GL6.go", true, positions, GL6, &packages.State{})
 
