@@ -81,6 +81,7 @@ func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, p
 
 	for _, filePath := range srcFiles {
 		// Populate state with source files ASTs funcDecls from imported packages
+		// This is for packages that need some state data depending on their AST, so that we prevent fetching the ASTs multiple times
 		go func(filePath string) {
 			defer wg.Done()
 			astFile, fset, err := ast.GetAst(filePath)

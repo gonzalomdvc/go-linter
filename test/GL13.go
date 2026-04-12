@@ -11,7 +11,7 @@ func GL13_no_positive() string {
 	if 1 == 1 {
 		return "true"
 	}
-	return ""
+	return "false"
 }
 
 func GL13_no_positive_2() bool {
