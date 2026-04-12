@@ -30,6 +30,8 @@ var Checks = []checks.CheckFunc{
 	checks.GL10,
 	checks.GL11,
 	checks.GL12,
+	checks.GL13,
+	checks.GL14,
 }
 
 var ChecksNeedState = []checks.CheckFunc{
