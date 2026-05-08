@@ -19,6 +19,12 @@ func GL14(fset *token.FileSet, file *ast.File, state *packages.State) []model.Fi
 
 	info, pkg := types.GetTypesInfoForFile(fset, file, state)
 
+	// Build a position→Object map once to avoid O(n) scan per ident.
+	posToObj := make(map[token.Pos]gotypes.Object, len(info.Uses))
+	for id, obj := range info.Uses {
+		posToObj[id.Pos()] = obj
+	}
+
 	ast.Inspect(file, func(n ast.Node) bool {
 		if genDecl, ok := n.(*ast.GenDecl); ok {
 			for _, spec := range genDecl.Specs {
@@ -39,7 +45,7 @@ func GL14(fset *token.FileSet, file *ast.File, state *packages.State) []model.Fi
 		if assignStmt, ok := n.(*ast.AssignStmt); ok {
 			for _, lhs := range assignStmt.Lhs {
 				if ident, ok := lhs.(*ast.Ident); ok {
-					if isAssignRuneOrCharType(ident, info) && hasCharValue(assignStmt.Rhs) {
+					if isAssignRuneOrCharType(ident, posToObj) && hasCharValue(assignStmt.Rhs) {
 						findings = append(findings, model.Finding{
 							Position: fset.Position(assignStmt.Pos()),
 							Message:  "Consider using alias 'rune' for int32 chars and 'byte' for uint8 chars",
@@ -69,12 +75,10 @@ func isRuneOrCharUnderlyingType(vType *ast.Ident, pkg *gotypes.Package, info *go
 	return false
 }
 
-func isAssignRuneOrCharType(ident *ast.Ident, info *gotypes.Info) bool {
-	for id, obj := range info.Uses {
-		if id.Pos() == ident.Pos() {
-			t := obj.Type().String()
-			return t == "int32" || t == "uint8"
-		}
+func isAssignRuneOrCharType(ident *ast.Ident, posToObj map[token.Pos]gotypes.Object) bool {
+	if obj, ok := posToObj[ident.Pos()]; ok {
+		t := obj.Type().String()
+		return t == "int32" || t == "uint8"
 	}
 	return false
 }
