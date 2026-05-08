@@ -10,6 +10,7 @@ import (
 	"go/types"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/gonzalomdvc/go-linter/packages"
 	xpackages "golang.org/x/tools/go/packages"
@@ -115,6 +116,8 @@ func ResolveTypesInfoForFiles(state *packages.State, fset *token.FileSet) error 
 
 	seenDirs := make(map[string]struct{})
 	var errs []string
+	var mu sync.Mutex
+	var wg sync.WaitGroup
 
 	for path, ast := range state.SourceAsts {
 		dir := normalizeDirPath(filepath.Dir(path))
@@ -128,13 +131,22 @@ func ResolveTypesInfoForFiles(state *packages.State, fset *token.FileSet) error 
 			continue
 		}
 
-		info, pkg, err := resolveTypesFromAst(dir, ast, state, fset)
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("%s: %s", path, err))
-		}
-		state.TypesInfo[dir] = info
-		state.PackageTypesInfo[dir] = pkg
+		wg.Add(1)
+		go func(dir string, ast packages.SourceAst) {
+			defer wg.Done()
+			info, pkg, err := resolveTypesFromAst(dir, ast, state, fset)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				errs = append(errs, fmt.Sprintf("%s: %s", path, err))
+				return
+			}
+			state.TypesInfo[dir] = info
+			state.PackageTypesInfo[dir] = pkg
+		}(dir, ast)
 	}
+
+	wg.Wait()
 
 	if len(errs) > 0 {
 		return errors.New(strings.Join(errs, "; "))
