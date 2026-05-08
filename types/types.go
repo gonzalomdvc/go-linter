@@ -50,6 +50,7 @@ func resolveWithTypesCheck(dirPath string, state *packages.State) (*types.Info, 
 
 	cfg := &types.Config{
 		Importer: importer.Default(),
+		Error:    func(err error) {}, // suppress import errors; local type info is still populated
 	}
 	info := &types.Info{
 		Types:      make(map[ast.Expr]types.TypeAndValue),
@@ -60,9 +61,9 @@ func resolveWithTypesCheck(dirPath string, state *packages.State) (*types.Info, 
 		InitOrder:  []*types.Initializer{},
 		Selections: make(map[*ast.SelectorExpr]*types.Selection),
 	}
-	pkg, err := cfg.Check(dirPath, sharedFset, astFiles, info)
-	if err != nil {
-		return nil, nil, fmt.Errorf("type-checking error for directory %s: %w", dirPath, err)
+	pkg, _ := cfg.Check(dirPath, sharedFset, astFiles, info)
+	if pkg == nil {
+		return nil, nil, fmt.Errorf("type-checking returned nil package for directory %s", dirPath)
 	}
 	return info, pkg, nil
 
@@ -95,6 +96,9 @@ func GetTypesInfoForFile(fset *token.FileSet, file *ast.File, state *packages.St
 
 	state.TypesInfo[dirPath] = info
 	state.PackageTypesInfo[dirPath] = pkg
+	if pkg == nil {
+		return info, nil
+	}
 	return info, pkg.Types
 }
 
