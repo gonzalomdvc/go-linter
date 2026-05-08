@@ -5,6 +5,7 @@ import (
 	goast "go/ast"
 	"go/token"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -13,6 +14,7 @@ import (
 	"github.com/gonzalomdvc/go-linter/checks"
 	"github.com/gonzalomdvc/go-linter/model"
 	"github.com/gonzalomdvc/go-linter/packages"
+	linttypes "github.com/gonzalomdvc/go-linter/types"
 )
 
 var MaxDepth = 20
@@ -38,31 +40,46 @@ var ChecksNeedState = []checks.CheckFunc{
 	checks.GL10,
 }
 
+var ChecksNeedTypes = []checks.CheckFunc{
+	checks.GL14,
+}
+
 func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, parallel bool) []model.Finding {
 	// Get all source files in the directory and subdirectories up to the specified depth
 	srcFiles, err := getSourceFiles(dirname, depth, 0)
+	fset := token.NewFileSet()
 	if err != nil {
 		panic(fmt.Sprintf("Error reading source code files: %s", err))
 	}
 	var findings []model.Finding
 
 	var checksNeedingState []checks.CheckFunc
-	var checksNotNeedingState []checks.CheckFunc
+	var checksNeedingTypes []checks.CheckFunc
+	var checksRequiringState []checks.CheckFunc
 	for _, check := range checkFuncs {
-		if contains(ChecksNeedState, check) {
+		needsState := contains(ChecksNeedState, check)
+		needsTypes := contains(ChecksNeedTypes, check)
+
+		if needsState {
 			checksNeedingState = append(checksNeedingState, check)
+		}
+		if needsTypes {
+			checksNeedingTypes = append(checksNeedingTypes, check)
+		}
+
+		if needsState || needsTypes {
+			checksRequiringState = append(checksRequiringState, check)
 		} else {
-			checksNotNeedingState = append(checksNotNeedingState, check)
 			// We can run checks that don't need state in parallel without waiting for the state to be populated
 			if parallel {
-				findings = append(findings, runChecksInParallel(srcFiles, []checks.CheckFunc{check}, &packages.State{Packages: make(map[string]packages.Package), SourceAsts: make(map[string]packages.SourceAst)})...)
+				findings = append(findings, runChecksInParallel(srcFiles, []checks.CheckFunc{check}, &packages.State{Packages: make(map[string]packages.Package), SourceAsts: make(map[string]packages.SourceAst)}, fset)...)
 			} else {
-				findings = append(findings, runChecksSerially(srcFiles, []checks.CheckFunc{check}, &packages.State{Packages: make(map[string]packages.Package), SourceAsts: make(map[string]packages.SourceAst)})...)
+				findings = append(findings, runChecksSerially(srcFiles, []checks.CheckFunc{check}, &packages.State{Packages: make(map[string]packages.Package), SourceAsts: make(map[string]packages.SourceAst)}, fset)...)
 			}
 		}
 	}
 
-	if len(checksNeedingState) == 0 {
+	if len(checksRequiringState) == 0 {
 		return findings
 	}
 
@@ -86,7 +103,7 @@ func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, p
 		// This is for packages that need some state data depending on their AST, so that we prevent fetching the ASTs multiple times
 		go func(filePath string) {
 			defer wg.Done()
-			astFile, fset, err := ast.GetAst(filePath)
+			astFile, fset, err := ast.GetAst(filePath, fset)
 			if err != nil {
 				fmt.Printf("Error generating AST for file %s: %s\n", filePath, err)
 				return
@@ -102,26 +119,34 @@ func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, p
 	close(astFileCh)
 	consumerWg.Wait()
 
-	funcDeclResults, err := packages.ImportPackagesFromState(state)
-	if err != nil {
-		fmt.Print("Packages not found in mod cache. Run go mod tidy to download")
+	if len(checksNeedingState) > 0 {
+		funcDeclResults, err := packages.ImportPackagesFromState(state)
+		if err != nil {
+			fmt.Print("Packages not found in mod cache. Run go mod tidy to download")
+		}
+		for _, funcDeclResult := range funcDeclResults {
+			if _, exists := state.Packages[funcDeclResult.PackagePath]; !exists {
+				state.Packages[funcDeclResult.PackagePath] = packages.Package{FuncDecls: funcDeclResult.FuncDecls}
+			}
+		}
 	}
-	for _, funcDeclResult := range funcDeclResults {
-		if _, exists := state.Packages[funcDeclResult.PackagePath]; !exists {
-			state.Packages[funcDeclResult.PackagePath] = packages.Package{FuncDecls: funcDeclResult.FuncDecls}
+
+	if len(checksNeedingTypes) > 0 {
+		if err := linttypes.ResolveTypesInfoForFiles(state, nil); err != nil {
+			fmt.Printf("Failed to load package type information: %s\n", err)
 		}
 	}
 
 	if parallel {
-		findings = append(findings, runChecksInParallel(srcFiles, checkFuncs, state)...)
+		findings = append(findings, runChecksInParallel(srcFiles, checksRequiringState, state, fset)...)
 	} else {
-		findings = append(findings, runChecksSerially(srcFiles, checkFuncs, state)...)
+		findings = append(findings, runChecksSerially(srcFiles, checksRequiringState, state, fset)...)
 	}
 
 	return findings
 }
 
-func runChecksInParallel(srcFiles []string, checkFuncs []checks.CheckFunc, state *packages.State) []model.Finding {
+func runChecksInParallel(srcFiles []string, checkFuncs []checks.CheckFunc, state *packages.State, fset *token.FileSet) []model.Finding {
 	var findings []model.Finding
 	totalJobs := len(srcFiles) * len(checkFuncs)
 	if totalJobs == 0 {
@@ -133,10 +158,9 @@ func runChecksInParallel(srcFiles []string, checkFuncs []checks.CheckFunc, state
 	for _, filePath := range srcFiles {
 		go func(filePath string, state *packages.State) {
 			var astFile *goast.File
-			var fset *token.FileSet
 			var err error
 			if _, exists := state.SourceAsts[filePath]; !exists {
-				astFile, fset, err = ast.GetAst(filePath)
+				astFile, fset, err = ast.GetAst(filePath, fset)
 				if err != nil {
 					fmt.Printf("Error generating AST for file %s: %s\n", filePath, err)
 					return
@@ -160,14 +184,13 @@ func runChecksInParallel(srcFiles []string, checkFuncs []checks.CheckFunc, state
 	return findings
 }
 
-func runChecksSerially(srcFiles []string, checkFuncs []checks.CheckFunc, state *packages.State) []model.Finding {
+func runChecksSerially(srcFiles []string, checkFuncs []checks.CheckFunc, state *packages.State, fset *token.FileSet) []model.Finding {
 	var findings []model.Finding
 	for _, filePath := range srcFiles {
 		var astFile *goast.File
-		var fset *token.FileSet
 		var err error
 		if _, exists := state.SourceAsts[filePath]; !exists {
-			astFile, fset, err = ast.GetAst(filePath)
+			astFile, fset, err = ast.GetAst(filePath, fset)
 			if err != nil {
 				fmt.Printf("Error generating AST for file %s: %s\n", filePath, err)
 				continue
@@ -205,7 +228,7 @@ func getSourceFiles(dirname string, depth, currentDepth int) ([]string, error) {
 			if file.Name()[0] == '.' {
 				continue
 			}
-			subDirPath := dirname + string(os.PathSeparator) + file.Name()
+			subDirPath := filepath.Join(dirname, file.Name())
 			subDirFiles, err := getSourceFiles(subDirPath, depth, currentDepth+1)
 			if err != nil {
 				fmt.Printf("Error getting source files from directory %s: %s\n", subDirPath, err)
@@ -219,7 +242,7 @@ func getSourceFiles(dirname string, depth, currentDepth int) ([]string, error) {
 			panic(fmt.Sprintf("Error matching file name: %s", err))
 		}
 		if isSourceFile {
-			path := dirname + string(os.PathSeparator) + file.Name()
+			path := filepath.Join(dirname, file.Name())
 			srcFiles = append(srcFiles, path)
 		}
 	}

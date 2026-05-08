@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"go/types"
+
 	"github.com/gonzalomdvc/go-linter/ast"
 	"golang.org/x/tools/go/packages"
 )
@@ -26,8 +28,10 @@ type SourceAst struct {
 }
 
 type State struct {
-	SourceAsts map[string]SourceAst
-	Packages   map[string]Package
+	SourceAsts       map[string]SourceAst
+	Packages         map[string]Package
+	TypesInfo        map[string]*types.Info
+	PackageTypesInfo map[string]*packages.Package
 }
 
 func collectImportPaths(astFile *goast.File, state *State, seen map[string]struct{}, importPaths *[]string) {

@@ -19,7 +19,7 @@ func Test_GL10(t *testing.T) {
 	}
 	funcDeclsCh := make(chan packages.FuncDeclResult, 1)
 
-	astFile, _, err := ast.GetAst("../test/GL10.go")
+	astFile, _, err := ast.GetAst("../test/GL10.go", nil)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

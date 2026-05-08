@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"go/token"
 	"slices"
 
 	"github.com/gonzalomdvc/go-linter/ast"
@@ -15,7 +16,8 @@ type Position struct {
 }
 
 func RunCheckTest(filename string, verbose bool, positions []Position, checkFunc CheckFunc, state *packages.State) error {
-	astFile, fset, err := ast.GetAst(fmt.Sprintf("../test/%s", filename))
+	fset := token.NewFileSet()
+	astFile, fset, err := ast.GetAst(fmt.Sprintf("../test/%s", filename), fset)
 	if err != nil {
 		return fmt.Errorf("Expected no error, got %v", err)
 	}
