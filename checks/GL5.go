@@ -28,7 +28,7 @@ func GL5(fset *token.FileSet, file *ast.File, state *packages.State) []model.Fin
 				return true
 			}
 			if firstArg, ok := expr.Args[0].(*ast.BasicLit); ok && call {
-				if firstArg.Kind == token.STRING && len(firstArg.Value) >= 2 {
+				if firstArg.Kind == token.STRING && len(firstArg.Value) >= 3 {
 					match := firstArg.Value[len(firstArg.Value)-3:len(firstArg.Value)-1] == "\\n"
 					if match {
 						findings = append(findings, model.Finding{
