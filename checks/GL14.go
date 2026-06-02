@@ -14,9 +14,6 @@ import (
 
 func GL14(fset *token.FileSet, file *ast.File, state *packages.State) []model.Finding {
 	var findings []model.Finding
-
-	// Hook for future type-driven checks. Current lint behavior remains unchanged.
-
 	info, pkg := types.GetTypesInfoForFile(fset, file, state)
 
 	// Build a position→Object map once to avoid O(n) scan per ident.

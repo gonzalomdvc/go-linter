@@ -1,4 +1,4 @@
-// Go Linter X: explanation
+// Go Linter 9: use channel receive instead of single case select
 
 package checks
 

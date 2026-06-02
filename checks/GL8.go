@@ -1,4 +1,4 @@
-// Go Linter X: explanation
+// Go Linter 8: Empty default in for-select spins
 
 package checks
 
