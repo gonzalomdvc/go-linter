@@ -21,7 +21,7 @@ func PrintPosition(pos token.Position, message string) (string, error) {
 	buffer := make([]byte, BUFFER_SIZE)
 	file.ReadAt(buffer, int64(pos.Offset))
 
-	output := fmt.Sprintf("Warning in file: %s, Line: %d, Column: %d\n", pos.Filename, pos.Line, pos.Column)
+	output := fmt.Sprintf("Warning in %s:%d:%d\n", pos.Filename, pos.Line, pos.Column)
 	output += fmt.Sprintf("%s\n", message)
 	output += fmt.Sprintf("--> %s", strings.Split(string(buffer), "\n")[0])
 
