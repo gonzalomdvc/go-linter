@@ -126,7 +126,7 @@ func RunLinterChecks(dirname string, checkFuncs []checks.CheckFunc, depth int, p
 		}
 		for _, funcDeclResult := range funcDeclResults {
 			if _, exists := state.Packages[funcDeclResult.PackagePath]; !exists {
-				state.Packages[funcDeclResult.PackagePath] = packages.Package{FuncDecls: funcDeclResult.FuncDecls}
+				state.Packages[funcDeclResult.PackagePath] = packages.Package{FuncDecls: funcDeclResult.FuncDecls, Alias: funcDeclResult.Alias}
 			}
 		}
 	}

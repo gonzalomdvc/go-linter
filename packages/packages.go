@@ -15,11 +15,13 @@ import (
 
 type FuncDeclResult struct {
 	PackagePath string
+	Alias       string
 	FuncDecls   []*goast.FuncDecl
 }
 
 type Package struct {
 	FuncDecls []*goast.FuncDecl
+	Alias     string
 }
 
 type SourceAst struct {
@@ -78,7 +80,7 @@ func loadPackagesByImportPath(importPaths []string) ([]FuncDeclResult, error) {
 
 	results := make([]FuncDeclResult, 0, len(pkgs))
 	for _, pkg := range pkgs {
-		results = append(results, FuncDeclResult{PackagePath: pkg.PkgPath, FuncDecls: ast.GetFuncDecls(pkg.Syntax)})
+		results = append(results, FuncDeclResult{PackagePath: pkg.PkgPath, Alias: pkg.Name, FuncDecls: ast.GetFuncDecls(pkg.Syntax)})
 	}
 
 	return results, nil
